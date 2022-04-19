@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # by Antony Lesuisse 2020, public domain
 import os
-import re
 import select
 import socket
 import subprocess
@@ -106,18 +105,6 @@ def sonos_play(sonos: soco.core.SoCo, volume: int) -> None:
     sonos.play()
 
 
-def sonos_volume(sonos: soco.core.SoCo) -> None:
-    output = run('amixer sget Master,0')
-    line = re.findall(r' \[([0-9]*)%\] ', output)
-    volume = int(line[0])
-    if volume != 75:
-        volume_delta = volume - 75
-        print(f'local volume is {volume} delta 75 {volume_delta}')
-        sonos_volume = sonos.volume
-        sonos.volume = sonos_volume + volume_delta
-        print(f'volume from sv {sonos_volume} to {sonos_volume + volume_delta}:')
-        run('pactl set-sink-volume Sonos 75%')
-
 
 def pa_sink_load() -> None:
     output = run('pactl list sinks short')
@@ -180,8 +167,6 @@ def main() -> None:
             for descriptor in ret[0]:
                 buf = os.read(descriptor, 8192).decode('utf8')
                 print(buf)
-                if 'sink' in buf:
-                    sonos_volume(sonos)
     except KeyboardInterrupt as error:
         print(f'Caught {error}')
         print('killing vlc')
