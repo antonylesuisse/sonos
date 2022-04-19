@@ -43,13 +43,13 @@ def run(cmd: str, shell: bool = False) -> str:
     return proc.stdout.decode('utf-8').strip()
 
 
-def soco_discover() -> soco.core.SoCo:
+def sonos_discover() -> soco.core.SoCo:
     device = list(soco.discover())[0]
     print(device.get_speaker_info())
     return device
 
 
-def soco_play(sonos: soco.core.SoCo, volume: int) -> None:
+def sonos_play(sonos: soco.core.SoCo, volume: int) -> None:
     ip_addr = run(
         'ip addr show scope global | grep "inet "  |cut -d" " -f6| cut -d/ -f1 | head -1'
     ).strip()
@@ -61,7 +61,7 @@ def soco_play(sonos: soco.core.SoCo, volume: int) -> None:
     sonos.play()
 
 
-def soco_volume(sonos: soco.core.SoCo) -> None:
+def sonos_volume(sonos: soco.core.SoCo) -> None:
     output = run('amixer sget Master,0')
     line = re.findall(r' \[([0-9]*)%\] ', output)
     volume = int(line[0])
@@ -123,11 +123,11 @@ def main() -> None:
     pa_sink_load()
     vlc_proc = vlc()
     silence_proc = silence()
-    sonos = soco_discover()
+    sonos = sonos_discover()
     volume = 45
     if len(sys.argv) > 1:
         volume = int(sys.argv[1])
-    soco_play(sonos, volume)
+    sonos_play(sonos, volume)
     fds = [vlc_proc.stdout.fileno(), vlc_proc.stderr.fileno()]
     try:
         while 1:
@@ -136,7 +136,7 @@ def main() -> None:
                 buf = os.read(descriptor, 8192).decode('utf8')
                 print(buf)
                 if 'sink' in buf:
-                    soco_volume(sonos)
+                    sonos_volume(sonos)
     except KeyboardInterrupt as error:
         print(f'Caught {error}')
         print('killing vlc')
