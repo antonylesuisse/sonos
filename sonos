@@ -5,7 +5,7 @@ import re
 import select
 import subprocess
 import sys
-from typing import List, Union
+from typing import List, Optional, Union
 
 import soco  # type: ignore[import]
 
@@ -43,10 +43,28 @@ def run(cmd: str, shell: bool = False) -> str:
     return proc.stdout.decode('utf-8').strip()
 
 
-def sonos_discover() -> soco.core.SoCo:
-    device = list(soco.discover())[0]
-    print(device.get_speaker_info())
-    return device
+def sonos_discover(preferred: str = '') -> Optional[soco.core.SoCo]:
+    """
+    Discover a Sonos speaker
+
+    Args:
+        preferred (str, optional): IP of preferred Sonos device. Defaults to ''.
+
+    Returns:
+        Optional[soco.core.SoCo]: Sonos device found
+    """
+    for device in soco.discover():
+        if not preferred:
+            print(
+                'No preferred Sonos device.  Returning the first one found: '
+                f'{device.player_name}'
+            )
+            return device
+        if preferred == device.ip_address:
+            print(f'Preferred Sonos device found: {device.player_name}')
+            return device
+
+    return None
 
 
 def sonos_play(sonos: soco.core.SoCo, volume: int) -> None:
