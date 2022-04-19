@@ -12,18 +12,21 @@ import socket
 from functools import wraps
 
 import requests
-from soco import config
-
-from .data_structures import (DidlMusicAlbum, DidlObject,
-                              DidlPlaylistContainer, DidlResource, Queue,
-                              SearchResult, from_didl_string, to_didl_string)
-from .exceptions import SoCoSlaveException, SoCoUPnPException
-from .groups import ZoneGroup
-from .services import (AlarmClock, AVTransport, ContentDirectory,
-                       DeviceProperties, RenderingControl, ZoneGroupTopology)
-from .utils import (camel_to_underscore, really_unicode, really_utf8,
-                    url_escape_path)
-from .xml import XML
+from soco import config  # type: ignore[import]
+from soco.data_structures import (DidlMusicAlbum,  # type: ignore[import]
+                                  DidlObject, DidlPlaylistContainer,
+                                  DidlResource, Queue, SearchResult,
+                                  to_didl_string)
+from soco.data_structures_entry import from_didl_string  # type: ignore[import]
+from soco.exceptions import (SoCoSlaveException,  # type: ignore[import]
+                             SoCoUPnPException)
+from soco.groups import ZoneGroup  # type: ignore[import]
+from soco.services import (AlarmClock, AVTransport,  # type: ignore[import]
+                           ContentDirectory, DeviceProperties,
+                           RenderingControl, ZoneGroupTopology)
+from soco.utils import (camel_to_underscore,  # type: ignore[import]
+                        really_unicode, really_utf8, url_escape_path)
+from soco.xml import XML  # type: ignore[import]
 
 _LOG = logging.getLogger(__name__)
 

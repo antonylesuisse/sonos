@@ -6,7 +6,7 @@ import select
 import subprocess
 import sys
 
-import soco
+import soco  # type: ignore[import]
 
 
 def run(cmd, shell=False):
