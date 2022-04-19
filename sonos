@@ -72,7 +72,9 @@ def pa_sink_unload() -> None:
 def vlc() -> subprocess.Popen:  # type: ignore[type-arg]
     command = "/usr/bin/cvlc -vvv pulse://Sonos.monitor --sout #transcode{vcodec=none,acodec=flac,ab=1441,channels=2,samplerate=44100,scodec=none}:standard{access=http,dst=0.0.0.0:8888/pc.flac}"
     proc = subprocess.Popen(
-        command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        command.split(" "),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     return proc
 
@@ -82,7 +84,9 @@ def silence() -> subprocess.Popen:  # type: ignore[type-arg]
     # c="ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anullsrc=r=44100:cl=mono"
     command = "ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anoisesrc=c=pink:r=44100:a=0.001"
     proc = subprocess.Popen(
-        command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        command.split(" "),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     return proc
 
@@ -97,7 +101,6 @@ def main() -> None:
         volume = int(sys.argv[1])
     soco_play(sonos, volume)
     fds = [vlc_proc.stdout.fileno(), vlc_proc.stderr.fileno()]
-    prev = 0
     try:
         while 1:
             ret = select.select(fds, [], [])
@@ -106,7 +109,7 @@ def main() -> None:
                 print(buf)
                 if 'sink' in buf:
                     soco_volume(sonos)
-    except (Exception, KeyboardInterrupt) as error:
+    except KeyboardInterrupt as error:
         print('Catched %r' % error)
         print('killing vlc')
         vlc_proc.terminate()
