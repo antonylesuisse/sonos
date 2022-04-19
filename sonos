@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-# by Antony Lesuisse 2020, public domain
+"""
+Send audio from Pulse Audio to a Sonos device
+    by Antony Lesuisse 2020, public domain
+"""
+
 import argparse
 import socket
 import subprocess
