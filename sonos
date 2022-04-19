@@ -15,44 +15,44 @@ def run(cmd, shell=False):
         shell = True
     else:
         cmd = cmd.split(' ')
-    o = subprocess.check_output(cmd, shell=shell).decode('utf8')
-    return o
+    output = subprocess.check_output(cmd, shell=shell).decode('utf8')
+    return output
 
 
 def soco_discover():
-    s = list(soco.discover())[0]
-    print(s.get_speaker_info())
-    return s
+    device = list(soco.discover())[0]
+    print(device.get_speaker_info())
+    return device
 
 
-def soco_play(s, vol):
-    ip = run(
+def soco_play(sonos, volume):
+    ip_addr = run(
         'ip addr show scope global | grep "inet "  |cut -d" " -f6| cut -d/ -f1 | head -1'
     ).strip()
-    if not s.get_current_track_info()['uri'].endswith('pc.flac'):
-        s.clear_queue()
-        s.add_uri_to_queue('http://%s:8888/pc.flac' % ip)
-        s.play_from_queue(0)
-    s.volume = vol
-    s.play()
+    if not sonos.get_current_track_info()['uri'].endswith('pc.flac'):
+        sonos.clear_queue()
+        sonos.add_uri_to_queue('http://%s:8888/pc.flac' % ip_addr)
+        sonos.play_from_queue(0)
+    sonos.volume = volume
+    sonos.play()
 
 
-def soco_volume(s):
-    o = run('amixer sget Master,0')
-    l = re.findall(r' \[([0-9]*)%\] ', o)
-    v = int(l[0])
-    if v != 75:
-        vd = v - 75
-        print('local volume is %s delta 75 %s' % (v, vd))
-        sv = s.volume
-        s.volume = sv + vd
-        print('volume from sv %s to %s:' % (sv, sv + vd))
+def soco_volume(sonos):
+    output = run('amixer sget Master,0')
+    line = re.findall(r' \[([0-9]*)%\] ', output)
+    volume = int(line[0])
+    if volume != 75:
+        volume_delta = volume - 75
+        print('local volume is %s delta 75 %s' % (volume, volume_delta))
+        sonos_volume = sonos.volume
+        sonos.volume = sonos_volume + volume_delta
+        print('volume from sv %s to %s:' % (sonos_volume, sonos_volume + volume_delta))
         run('pactl set-sink-volume Sonos 75%')
 
 
-def pasink_load():
-    o = run('pactl list sinks short')
-    if not 'Sonos' in o:
+def pa_sink_load():
+    output = run('pactl list sinks short')
+    if not 'Sonos' in output:
         sink = run("pactl list sinks short | awk '{print $2}'| head -1").strip()
         run(
             'pacmd load-module module-combine-sink sink_name=Sonos sink_properties=device.description=Sonos slaves=%s channels=2'
@@ -63,55 +63,55 @@ def pasink_load():
         run('pactl set-default-sink Sonos')
 
 
-def pasink_unload():
+def pa_sink_unload():
     sink = run("pactl list sinks short | awk '{print $2}'| head -1").strip()
     run('pactl set-default-sink %s' % sink)
     run('pacmd unload-module module-combine-sink')
 
 
 def vlc():
-    c = "/usr/bin/cvlc -vvv pulse://Sonos.monitor --sout #transcode{vcodec=none,acodec=flac,ab=1441,channels=2,samplerate=44100,scodec=none}:standard{access=http,dst=0.0.0.0:8888/pc.flac}"
-    p = subprocess.Popen(c.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return p
+    command = "/usr/bin/cvlc -vvv pulse://Sonos.monitor --sout #transcode{vcodec=none,acodec=flac,ab=1441,channels=2,samplerate=44100,scodec=none}:standard{access=http,dst=0.0.0.0:8888/pc.flac}"
+    proc = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return proc
 
 
 def silence():
     # very light Pink noise to avoid sonos to cut when there is silence
     # c="ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anullsrc=r=44100:cl=mono"
-    c = "ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anoisesrc=c=pink:r=44100:a=0.001"
-    p = subprocess.Popen(c.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return p
+    command = "ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anoisesrc=c=pink:r=44100:a=0.001"
+    proc = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return proc
 
 
 def main():
-    pasink_load()
-    p = vlc()
-    ps = silence()
-    s = soco_discover()
-    vol = 45
+    pa_sink_load()
+    vlc_proc = vlc()
+    silence_proc = silence()
+    sonos = soco_discover()
+    volume = 45
     if len(sys.argv) > 1:
-        vol = int(sys.argv[1])
-    soco_play(s, vol)
-    fds = [p.stdout.fileno(), p.stderr.fileno()]
+        volume = int(sys.argv[1])
+    soco_play(sonos, volume)
+    fds = [vlc_proc.stdout.fileno(), vlc_proc.stderr.fileno()]
     prev = 0
     try:
         while 1:
             ret = select.select(fds, [], [])
-            for fd in ret[0]:
-                buf = os.read(fd, 8192).decode('utf8')
+            for descriptor in ret[0]:
+                buf = os.read(descriptor, 8192).decode('utf8')
                 print(buf)
                 if 'sink' in buf:
-                    soco_volume(s)
-    except (Exception, KeyboardInterrupt) as e:
-        print('Catched %r' % e)
+                    soco_volume(sonos)
+    except (Exception, KeyboardInterrupt) as error:
+        print('Catched %r' % error)
         print('killing vlc')
-        p.terminate()
+        vlc_proc.terminate()
         os.system('killall ffplay')
         print('killing ffplay')
-        ps.terminate()
+        silence_proc.terminate()
         os.system('killall vlc')
         print('unload pasink')
-        pasink_unload()
+        pa_sink_unload()
 
 
 main()
