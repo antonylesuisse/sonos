@@ -5,18 +5,42 @@ import re
 import select
 import subprocess
 import sys
+from typing import List, Union
 
 import soco  # type: ignore[import]
 
 
 def run(cmd: str, shell: bool = False) -> str:
-    print(cmd)
+    """
+    Function to run a command and return output
+
+    Args:
+        cmd (str): command to run
+        shell (bool, optional): Whether the supplied command should utilise the shell.
+            Defaults to False.
+
+    Returns:
+        str: _description_
+    """
+    command: Union[str, List[str]]
     if '|' in cmd:
         shell = True
+        command = cmd
     else:
-        cmd = cmd.split(' ')
-    output = subprocess.check_output(cmd, shell=shell).decode('utf8')
-    return output
+        command = cmd.split(' ')
+    try:
+        proc = subprocess.run(
+            command,
+            shell=shell,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=True,
+        )
+    except subprocess.CalledProcessError as error:
+        print(f'Command "{" ".join(error.cmd)}" failed: {error.stdout.decode("utf-8")}')
+        return ''
+
+    return proc.stdout.decode('utf-8').strip()
 
 
 def soco_discover() -> soco.core.SoCo:
