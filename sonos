@@ -209,8 +209,12 @@ def vlc() -> subprocess.Popen:  # type: ignore[type-arg]
 
 
 def silence() -> subprocess.Popen:  # type: ignore[type-arg]
-    # very light Pink noise to avoid sonos to cut when there is silence
-    # c="ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anullsrc=r=44100:cl=mono"
+    """
+    Play a very quiet Pink noise to avoid sonos to cut when there is silence
+
+    Returns:
+        subprocess.Popen: process handle for ffplay
+    """
     command = "ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anoisesrc=c=pink:r=44100:a=0.001"
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         command.split(" "),
