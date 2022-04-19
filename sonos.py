@@ -316,9 +316,8 @@ if __name__ == '__main__':
         except (EOFError, KeyboardInterrupt):
             print('Killing ffplay')
             silence_proc.terminate()
-            print('Killing vlc')
+            print('Killing VLC')
             vlc_proc.terminate()
-            print('Unload pasink')
             pa_sink_unload(module_loaded)
 
         return 0
