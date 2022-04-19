@@ -6,24 +6,24 @@ the main entry to the SoCo functionality
 
 from __future__ import unicode_literals
 
-import socket
 import logging
 import re
-import requests
+import socket
 from functools import wraps
 
-from .services import DeviceProperties, ContentDirectory
-from .services import RenderingControl, AVTransport, ZoneGroupTopology
-from .services import AlarmClock
-from .groups import ZoneGroup
-from .exceptions import SoCoUPnPException, SoCoSlaveException
-from .data_structures import DidlPlaylistContainer,\
-    SearchResult, Queue, DidlObject, DidlMusicAlbum,\
-    from_didl_string, to_didl_string, DidlResource
-from .utils import really_utf8, camel_to_underscore, really_unicode,\
-    url_escape_path
-from .xml import XML
+import requests
 from soco import config
+
+from .data_structures import (DidlMusicAlbum, DidlObject,
+                              DidlPlaylistContainer, DidlResource, Queue,
+                              SearchResult, from_didl_string, to_didl_string)
+from .exceptions import SoCoSlaveException, SoCoUPnPException
+from .groups import ZoneGroup
+from .services import (AlarmClock, AVTransport, ContentDirectory,
+                       DeviceProperties, RenderingControl, ZoneGroupTopology)
+from .utils import (camel_to_underscore, really_unicode, really_utf8,
+                    url_escape_path)
+from .xml import XML
 
 _LOG = logging.getLogger(__name__)
 
