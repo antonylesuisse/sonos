@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # by Antony Lesuisse 2020, public domain
 import argparse
-import os
-import select
 import socket
 import subprocess
 import sys
+from io import BufferedReader
+from queue import Empty, Queue
+from threading import Thread
 from typing import Any, List, Optional, Union
 
 import soco  # type: ignore[import]
@@ -225,6 +226,20 @@ def silence() -> subprocess.Popen:  # type: ignore[type-arg]
     return proc
 
 
+def stream_queue(stream: BufferedReader, queue: Queue) -> None:  # type: ignore[type-arg]
+    """
+    Read from a stream and push it to a queue
+
+    Args:
+        stream (BufferedReader): stream to follow
+        queue (Queue): queue to write to
+    """
+    while not stream.closed:
+        for line in iter(stream.readline, b''):
+            queue.put(line)
+    stream.close()
+
+
 if __name__ == '__main__':
 
     def parse_args() -> argparse.Namespace:
@@ -256,28 +271,50 @@ if __name__ == '__main__':
         Main program
         """
         args = parse_args()
+
         module_loaded = pa_sink_load(args.volume)
-        vlc_proc = vlc()
+
+        if not sonos_sink_exists():
+            print('No Sonos audio sink exists.')
+            return 5
+
         silence_proc = silence()
-        sonos = sonos_discover()
+
+        sonos = sonos_discover(preferred=args.device)
+        if not sonos:
+            print('No Sonos devices found')
+            return 3
+
+        vlc_proc = vlc()
+        if not vlc_proc.stdout:  # or not vlc_proc.stderr:
+            print('There was a problem with VLC.  Check errors.')
+            return 4
+
+        # Set up a thread and queue to read from the VLC CLI output
+        queue = Queue()  # type: ignore[var-annotated]
+        thread = Thread(target=stream_queue, args=(vlc_proc.stdout, queue))
+        thread.daemon = True
+        thread.start()
 
         sonos_play(sonos, args.volume)
-        fds = [vlc_proc.stdout.fileno(), vlc_proc.stderr.fileno()]
+
         try:
-            while 1:
-                ret = select.select(fds, [], [])
-                for descriptor in ret[0]:
-                    buf = os.read(descriptor, 8192).decode('utf8')
-                    print(buf)
-        except KeyboardInterrupt as error:
-            print(f'Caught {error}')
-            print('killing vlc')
-            vlc_proc.terminate()
-            os.system('killall ffplay')
-            print('killing ffplay')
+            while True:
+                try:
+                    buffer = queue.get_nowait().decode().strip()
+                except Empty:
+                    if vlc_proc.stdout.closed:
+                        print('Waiting for background thread to exit')
+                        thread.join()
+                        raise EOFError from Empty
+                    continue
+                print(buffer)
+        except (EOFError, KeyboardInterrupt):
+            print('Killing ffplay')
             silence_proc.terminate()
-            os.system('killall vlc')
-            print('unload pasink')
+            print('Killing vlc')
+            vlc_proc.terminate()
+            print('Unload pasink')
             pa_sink_unload(module_loaded)
 
         return 0
