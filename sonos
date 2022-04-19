@@ -9,7 +9,7 @@ import sys
 import soco  # type: ignore[import]
 
 
-def run(cmd, shell=False):
+def run(cmd: str, shell: bool = False) -> str:
     print(cmd)
     if '|' in cmd:
         shell = True
@@ -19,13 +19,13 @@ def run(cmd, shell=False):
     return output
 
 
-def soco_discover():
+def soco_discover() -> soco.core.SoCo:
     device = list(soco.discover())[0]
     print(device.get_speaker_info())
     return device
 
 
-def soco_play(sonos, volume):
+def soco_play(sonos: soco.core.SoCo, volume: int) -> None:
     ip_addr = run(
         'ip addr show scope global | grep "inet "  |cut -d" " -f6| cut -d/ -f1 | head -1'
     ).strip()
@@ -37,7 +37,7 @@ def soco_play(sonos, volume):
     sonos.play()
 
 
-def soco_volume(sonos):
+def soco_volume(sonos: soco.core.SoCo) -> None:
     output = run('amixer sget Master,0')
     line = re.findall(r' \[([0-9]*)%\] ', output)
     volume = int(line[0])
@@ -50,7 +50,7 @@ def soco_volume(sonos):
         run('pactl set-sink-volume Sonos 75%')
 
 
-def pa_sink_load():
+def pa_sink_load() -> None:
     output = run('pactl list sinks short')
     if not 'Sonos' in output:
         sink = run("pactl list sinks short | awk '{print $2}'| head -1").strip()
@@ -63,27 +63,31 @@ def pa_sink_load():
         run('pactl set-default-sink Sonos')
 
 
-def pa_sink_unload():
+def pa_sink_unload() -> None:
     sink = run("pactl list sinks short | awk '{print $2}'| head -1").strip()
     run('pactl set-default-sink %s' % sink)
     run('pacmd unload-module module-combine-sink')
 
 
-def vlc():
+def vlc() -> subprocess.Popen:  # type: ignore[type-arg]
     command = "/usr/bin/cvlc -vvv pulse://Sonos.monitor --sout #transcode{vcodec=none,acodec=flac,ab=1441,channels=2,samplerate=44100,scodec=none}:standard{access=http,dst=0.0.0.0:8888/pc.flac}"
-    proc = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     return proc
 
 
-def silence():
+def silence() -> subprocess.Popen:  # type: ignore[type-arg]
     # very light Pink noise to avoid sonos to cut when there is silence
     # c="ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anullsrc=r=44100:cl=mono"
     command = "ffplay -loglevel 24 -nodisp -autoexit -f lavfi -i anoisesrc=c=pink:r=44100:a=0.001"
-    proc = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     return proc
 
 
-def main():
+def main() -> None:
     pa_sink_load()
     vlc_proc = vlc()
     silence_proc = silence()
