@@ -185,15 +185,25 @@ def pa_sink_unload(module_loaded: bool, original_sink: str = '') -> None:
 
 
 def vlc() -> subprocess.Popen:  # type: ignore[type-arg]
+    """
+    Use VLC to transcode and send the audio as a FLAC stream
+
+    Returns:
+        subprocess.Popen: process handle for VLC
+    """
     command = (
-        '/usr/bin/cvlc -vvv pulse://Sonos.monitor --sout '
-        '#transcode{vcodec=none,acodec=flac,ab=1441,channels=2,samplerate=44100,scodec=none}'
-        f':standard{{access=http,dst=0.0.0.0:{HTTP_PORT}/{STREAM_NAME}}}'
+        "/usr/bin/cvlc "
+        "pulse://Sonos.monitor "
+        "--sout #transcode{vcodec=none,acodec=flac,"
+        "ab=1441,channels=2,samplerate=44100,scodec=none}:standard"
+        f"{{access=http,dst=/{STREAM_NAME}}} "
+        f'--http-host={get_ip()} '
+        f'--http-port={HTTP_PORT}'
     )
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         command.split(" "),
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
     )
     return proc
 
