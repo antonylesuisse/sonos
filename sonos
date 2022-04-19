@@ -105,24 +105,83 @@ def sonos_play(sonos: soco.core.SoCo, volume: int) -> None:
     sonos.play()
 
 
+def get_all_audio_sinks() -> str:
+    """
+    Return the output from
 
-def pa_sink_load() -> None:
-    output = run('pactl list sinks short')
-    if not 'Sonos' in output:
-        sink = run("pactl list sinks short | awk '{print $2}'| head -1").strip()
+    Returns:
+        str: _description_
+    """
+    return run('pactl list sinks short | awk "{print $2}"')
+
+
+def sonos_sink_exists() -> bool:
+    """
+    Check if the Sonos sink exists
+
+    Returns:
+        bool: True if found, False otherwise
+    """
+    return 'Sonos' in get_all_audio_sinks()
+
+
+def pa_get_default_sink() -> str:
+    """
+    Get the "default" Pulse Audio sink
+
+    Returns:
+        str: PA sink name
+    """
+    return get_all_audio_sinks().split('\n')[-1]
+
+
+def pa_sink_load(volume: int) -> bool:
+    """
+    Load the Pulse Audio sink for the Sonos
+
+    Args:
+        volume (int): Initial volume to set
+
+    Returns:
+        bool: True if we had to load the PA module.  False otherwise
+    """
+    module_loaded = False
+    sonos_sink = sonos_sink_exists()
+    if not sonos_sink:
+        sink = pa_get_default_sink()
+        if not sink:
+            print('No audio sinks found')
+            sys.exit(2)
+
         run(
             'pacmd load-module module-combine-sink sink_name=Sonos '
             f'sink_properties=device.description=Sonos slaves={sink} channels=2'
         )
-        run('pactl set-sink-volume Sonos 75%')
-        run(f'pactl set-sink-volume {sink} 0%')
+
+        module_loaded = sonos_sink_exists()
+
+    if sonos_sink:
+        run(f'pactl set-sink-volume Sonos {volume}%')
         run('pactl set-default-sink Sonos')
 
+    return module_loaded
 
-def pa_sink_unload() -> None:
-    sink = run("pactl list sinks short | awk '{print $2}'| head -1").strip()
+
+def pa_sink_unload(module_loaded: bool, original_sink: str = '') -> None:
+    """
+    Unload the Pule Audio sink for the Sonos
+
+    Args:
+        module_loaded (bool): Set true if we should attempt to unload the PA module
+        original_sink (str, optional): Reset the default sink back to this value. Defaults to ''.
+    """
+    sink = original_sink
+    if not sink:
+        sink = pa_get_default_sink()
     run(f'pactl set-default-sink {sink}')
-    run('pacmd unload-module module-combine-sink')
+
+    if module_loaded:
+        run('pacmd unload-module module-combine-sink')
 
 
 def vlc() -> subprocess.Popen:  # type: ignore[type-arg]
@@ -152,13 +211,14 @@ def silence() -> subprocess.Popen:  # type: ignore[type-arg]
 
 
 def main() -> None:
-    pa_sink_load()
-    vlc_proc = vlc()
-    silence_proc = silence()
-    sonos = sonos_discover()
     volume = 45
     if len(sys.argv) > 1:
         volume = int(sys.argv[1])
+    module_loaded = pa_sink_load(volume)
+    vlc_proc = vlc()
+    silence_proc = silence()
+    sonos = sonos_discover()
+
     sonos_play(sonos, volume)
     fds = [vlc_proc.stdout.fileno(), vlc_proc.stderr.fileno()]
     try:
@@ -176,7 +236,7 @@ def main() -> None:
         silence_proc.terminate()
         os.system('killall vlc')
         print('unload pasink')
-        pa_sink_unload()
+        pa_sink_unload(module_loaded)
 
 
 main()
