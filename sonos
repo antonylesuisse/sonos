@@ -31,7 +31,7 @@ def soco_play(sonos: soco.core.SoCo, volume: int) -> None:
     ).strip()
     if not sonos.get_current_track_info()['uri'].endswith('pc.flac'):
         sonos.clear_queue()
-        sonos.add_uri_to_queue('http://%s:8888/pc.flac' % ip_addr)
+        sonos.add_uri_to_queue(f'http://{ip_addr}:8888/pc.flac')
         sonos.play_from_queue(0)
     sonos.volume = volume
     sonos.play()
@@ -43,10 +43,10 @@ def soco_volume(sonos: soco.core.SoCo) -> None:
     volume = int(line[0])
     if volume != 75:
         volume_delta = volume - 75
-        print('local volume is %s delta 75 %s' % (volume, volume_delta))
+        print(f'local volume is {volume} delta 75 {volume_delta}')
         sonos_volume = sonos.volume
         sonos.volume = sonos_volume + volume_delta
-        print('volume from sv %s to %s:' % (sonos_volume, sonos_volume + volume_delta))
+        print(f'volume from sv {sonos_volume} to {sonos_volume + volume_delta}:')
         run('pactl set-sink-volume Sonos 75%')
 
 
@@ -55,17 +55,16 @@ def pa_sink_load() -> None:
     if not 'Sonos' in output:
         sink = run("pactl list sinks short | awk '{print $2}'| head -1").strip()
         run(
-            'pacmd load-module module-combine-sink sink_name=Sonos sink_properties=device.description=Sonos slaves=%s channels=2'
-            % sink
+            f'pacmd load-module module-combine-sink sink_name=Sonos sink_properties=device.description=Sonos slaves={sink} channels=2'
         )
         run('pactl set-sink-volume Sonos 75%')
-        run('pactl set-sink-volume %s 0%%' % sink)
+        run(f'pactl set-sink-volume {sink} 0%')
         run('pactl set-default-sink Sonos')
 
 
 def pa_sink_unload() -> None:
     sink = run("pactl list sinks short | awk '{print $2}'| head -1").strip()
-    run('pactl set-default-sink %s' % sink)
+    run(f'pactl set-default-sink {sink}')
     run('pacmd unload-module module-combine-sink')
 
 
@@ -110,7 +109,7 @@ def main() -> None:
                 if 'sink' in buf:
                     soco_volume(sonos)
     except KeyboardInterrupt as error:
-        print('Catched %r' % error)
+        print(f'Caught {error}')
         print('killing vlc')
         vlc_proc.terminate()
         os.system('killall ffplay')
