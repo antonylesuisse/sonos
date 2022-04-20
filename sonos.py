@@ -118,7 +118,7 @@ def get_all_audio_sinks() -> str:
     Returns:
         str: _description_
     """
-    return run('pactl list sinks short | awk "{print $2}"')
+    return run("pactl list sinks short | awk '{print $2}'")
 
 
 def sonos_sink_exists() -> bool:
@@ -160,11 +160,12 @@ def pa_sink_load(volume: int) -> bool:
             sys.exit(2)
 
         run(
-            'pacmd load-module module-combine-sink sink_name=Sonos '
+            'pactl load-module module-combine-sink sink_name=Sonos '
             f'sink_properties=device.description=Sonos slaves={sink} channels=2'
         )
+        sonos_sink = sonos_sink_exists()
 
-        module_loaded = sonos_sink_exists()
+        module_loaded = sonos_sink
 
     if sonos_sink:
         run(f'pactl set-sink-volume Sonos {volume}%')
@@ -187,7 +188,7 @@ def pa_sink_unload(module_loaded: bool, original_sink: str = '') -> None:
     run(f'pactl set-default-sink {sink}')
 
     if module_loaded:
-        run('pacmd unload-module module-combine-sink')
+        run('pactl unload-module module-combine-sink')
 
 
 def vlc() -> subprocess.Popen:  # type: ignore[type-arg]
