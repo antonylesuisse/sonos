@@ -7,7 +7,6 @@ services:
     environment:
       - TZ=Europe/London
       - PULSE_SERVER=unix:/app/pulse.sock
-      - SONOS_DEVICE_IP=10.0.9.117
     volumes:
       - ${XDG_RUNTIME_DIR}/pulse/native:/app/pulse.sock
     network_mode: host

@@ -14,7 +14,14 @@ Works and tested with IKEA SYMFONISK speakers on Ubuntu 20.04.
 
 ### Usage:
 
-    ./sonos
+    usage: sonos.py [-h] [-d DEVICE] [-v VOLUME]
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -d DEVICE, --device DEVICE
+                            preferred Sonos device to play stream on
+      -v VOLUME, --volume VOLUME
+
 
 Type Ctrl-C to stop streaming to sonos.
 
@@ -34,3 +41,8 @@ Type Ctrl-C to stop streaming to sonos.
 #### Docker Compose
 
     docker-compose up -d
+
+
+# Multiple Sonos units
+
+Currently this will only target a single Sonos device.  If you have more than one, you can specify a preferred device and it will attempt to control that one.  You can specify the IP address of the preferred device on the command line using `-d <IP>` or by setting the environment variable, `SONOS_DEVICE_IP=<IP>` within Docker.
