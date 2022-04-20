@@ -145,12 +145,16 @@ def pa_sink_load(volume: int) -> int:
     sonos_sink = sonos_sink_exists()
     if not sonos_sink:
         print('Loading PA module')
-        module_id = int(
-            run(
-                'pactl load-module module-combine-sink sink_name=Sonos '
-                'sink_properties=device.description=Sonos slaves=@DEFAULT_SINK@ channels=2'
+        try:
+            module_id = int(
+                run(
+                    'pactl load-module module-combine-sink sink_name=Sonos '
+                    'sink_properties=device.description=Sonos slaves=@DEFAULT_SINK@ channels=2'
+                )
             )
-        )
+        except ValueError:
+            print('There was an error loading the PA module.  Check the daemon is running.')
+            return 0
         sonos_sink = sonos_sink_exists()
 
     if sonos_sink:
