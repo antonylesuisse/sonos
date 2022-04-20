@@ -1,0 +1,14 @@
+---
+version: "3"
+services:
+  sonos-stream:
+    container_name: sonos-stream
+    image: sonos_stream:latest
+    environment:
+      - TZ=Europe/London
+      - PULSE_SERVER=unix:/app/pulse.sock
+      - SONOS_DEVICE_IP=10.0.9.117
+    volumes:
+      - ${XDG_RUNTIME_DIR}/pulse/native:/app/pulse.sock
+    network_mode: host
+    restart: unless-stopped
