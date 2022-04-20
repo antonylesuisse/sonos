@@ -113,10 +113,10 @@ def sonos_play(sonos: soco.core.SoCo, volume: int) -> None:
 
 def get_all_audio_sinks() -> str:
     """
-    Return the output from
+    Return the list of PA sinks
 
     Returns:
-        str: _description_
+        str: list of PA sinks
     """
     return run("pactl list sinks short | awk '{print $2}'")
 
@@ -161,13 +161,12 @@ def pa_sink_load(volume: int) -> int:
     return module_id
 
 
-def pa_sink_unload(module_id: int) -> None:
+def pa_sink_unload(module_id: int = 0) -> None:
     """
     Unload the Pule Audio sink for the Sonos
 
     Args:
-        module_loaded (bool): Set true if we should attempt to unload the PA module
-        original_sink (str, optional): Reset the default sink back to this value. Defaults to ''.
+        module_id (int): ID of PA module to unload. Defaults to 0
     """
     if module_id:
         print('Unloading PA module')
