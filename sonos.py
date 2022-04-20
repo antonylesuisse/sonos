@@ -293,7 +293,7 @@ if __name__ == '__main__':
         try:
             while True:
                 try:
-                    buffer = queue.get_nowait().decode().strip()
+                    buffer = queue.get().decode().strip()
                 except Empty:
                     if vlc_proc.stdout.closed:
                         print('Waiting for background thread to exit')
